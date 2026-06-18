@@ -22,6 +22,11 @@ export default function Home() {
   const [result, setResult] = useState<"HEADS" | "TAILS" | null>(null);
   const [winStatus, setWinStatus] = useState<"WIN" | "LOSS" | null>(null);
 
+  // Profile Edit States
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [editUsername, setEditUsername] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -75,6 +80,38 @@ export default function Home() {
 
   const handleLogout = async () => {
     await signOut(auth);
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !user) return;
+    if (editUsername.trim().length < 3 || editUsername.trim().length > 20) {
+      return alert("Tên hiển thị phải từ 3 đến 20 ký tự.");
+    }
+
+    setIsSavingProfile(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/user/profile`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ username: editUsername.trim() }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        alert(data.error);
+      } else {
+        setUser({ ...user, username: data.username });
+        setShowProfileModal(false);
+      }
+    } catch (err) {
+      alert("Network Error");
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const placeBet = async (selectedChoice: "HEADS" | "TAILS") => {
@@ -220,13 +257,19 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="glass-panel-accent p-6 rounded-3xl flex justify-between items-center"
       >
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-gradient-to-tr from-primary to-secondary rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-white/20">
+        <div 
+          className="flex items-center gap-4 cursor-pointer hover:bg-white/5 p-2 pr-6 rounded-2xl transition group"
+          onClick={() => {
+            setEditUsername(user?.username || "");
+            setShowProfileModal(true);
+          }}
+        >
+          <div className="w-14 h-14 bg-gradient-to-tr from-primary to-secondary rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-white/20 group-hover:scale-105 transition-transform">
             <span className="font-black text-2xl text-white">{user?.username.charAt(0).toUpperCase()}</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Player ID</p>
-            <p className="font-black text-xl text-neon-blue">{user?.username}</p>
+            <p className="text-sm font-semibold text-gray-400 uppercase tracking-wider group-hover:text-gray-300 transition-colors">Player ID (Edit)</p>
+            <p className="font-black text-xl text-neon-blue group-hover:text-blue-300 transition-colors">{user?.username}</p>
           </div>
         </div>
         
@@ -380,6 +423,68 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
+
+      {/* Profile Edit Modal */}
+      <AnimatePresence>
+        {showProfileModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="glass-panel p-8 rounded-[2rem] w-full max-w-md relative"
+            >
+              <button 
+                onClick={() => setShowProfileModal(false)}
+                className="absolute top-6 right-6 text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+              
+              <h2 className="text-3xl font-black uppercase tracking-wider mb-2 text-neon-blue">Edit Profile</h2>
+              <p className="text-gray-400 mb-8 text-sm">Customize how other players see you in the arena.</p>
+
+              <form onSubmit={handleUpdateProfile} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Display Name</label>
+                  <input 
+                    type="text" 
+                    className="w-full cyber-input text-white rounded-xl px-5 py-4 focus:outline-none font-bold text-lg"
+                    placeholder="Enter new name..."
+                    value={editUsername}
+                    onChange={(e) => setEditUsername(e.target.value)}
+                    maxLength={20}
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-2 text-right">{editUsername.length}/20</p>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    type="button"
+                    onClick={() => setShowProfileModal(false)}
+                    className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-xl font-bold uppercase tracking-wider transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isSavingProfile}
+                    className="flex-1 cyber-button text-white font-black uppercase tracking-wider py-4 rounded-xl disabled:opacity-50"
+                  >
+                    {isSavingProfile ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

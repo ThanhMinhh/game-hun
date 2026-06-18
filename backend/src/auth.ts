@@ -37,3 +37,31 @@ export const syncUser = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error or invalid token' });
   }
 };
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    // req.user is populated by requireAuth middleware
+    const userId = (req as any).user.userId;
+    const { username } = req.body;
+
+    if (!username || typeof username !== 'string' || username.trim().length < 3 || username.trim().length > 20) {
+      return res.status(400).json({ error: 'Tên hiển thị phải từ 3 đến 20 ký tự.' });
+    }
+
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    }
+
+    await userRef.update({
+      username: username.trim()
+    });
+
+    res.json({ message: 'Cập nhật thành công', username: username.trim() });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Lỗi hệ thống khi cập nhật hồ sơ' });
+  }
+};

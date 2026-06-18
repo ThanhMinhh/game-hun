@@ -18,7 +18,7 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
-import { syncUser } from './auth';
+import { syncUser, updateProfile } from './auth';
 import { processBet } from './wallet';
 import { resolveCoinflip } from './game';
 import { auth } from './db';
@@ -39,6 +39,8 @@ const requireAuth = async (req: any, res: any, next: any) => {
     res.status(401).json({ error: 'Invalid or expired token' });
   }
 };
+
+app.post('/api/user/profile', requireAuth, updateProfile);
 
 app.post('/api/game/coinflip/bet', requireAuth, async (req: any, res: any) => {
   try {
