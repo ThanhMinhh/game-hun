@@ -168,13 +168,13 @@ export default function Home() {
 
   if (!token || !user) {
     return (
-      <div className="relative w-full max-w-md mx-auto mt-12">
+      <div className="relative w-full max-w-md mx-auto mt-12 px-4">
         <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full z-0" />
         
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="glass-panel p-10 rounded-3xl relative z-10"
+          className="glass-panel p-6 sm:p-10 rounded-3xl relative z-10"
         >
           <div className="flex justify-center mb-6">
             <motion.div 
@@ -250,12 +250,12 @@ export default function Home() {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-10 mt-6 relative z-10">
+    <div className="w-full max-w-5xl mx-auto space-y-8 lg:space-y-10 mt-4 lg:mt-6 relative z-10 px-4">
       {/* Navbar / Dashboard */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-panel-accent p-6 rounded-3xl flex justify-between items-center"
+        className="glass-panel-accent p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-6 sm:gap-0"
       >
         <div 
           className="flex items-center gap-4 cursor-pointer hover:bg-white/5 p-2 pr-6 rounded-2xl transition group"
@@ -273,10 +273,10 @@ export default function Home() {
           </div>
         </div>
         
-        <div className="flex items-center gap-8">
-          <div className="bg-black/40 px-6 py-3 rounded-2xl border border-primary/30 flex items-center gap-3 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-            <Coins className="text-yellow-400 w-6 h-6" />
-            <span className="font-mono font-black text-2xl text-white tracking-wider">{user?.balance.toFixed(0)} <span className="text-sm text-primary">HUN</span></span>
+        <div className="flex items-center gap-4 sm:gap-8 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="bg-black/40 px-4 sm:px-6 py-3 rounded-2xl border border-primary/30 flex items-center gap-2 sm:gap-3 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] flex-1 sm:flex-none justify-center">
+            <Coins className="text-yellow-400 w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="font-mono font-black text-xl sm:text-2xl text-white tracking-wider">{user?.balance.toFixed(0)} <span className="text-sm text-primary">HUN</span></span>
           </div>
           <button onClick={handleLogout} className="p-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/50 transition-all">
             <LogOut size={20} />
@@ -291,7 +291,7 @@ export default function Home() {
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="lg:col-span-3 glass-panel p-12 rounded-[2.5rem] flex flex-col items-center justify-center min-h-[500px] relative overflow-hidden"
+          className="lg:col-span-3 glass-panel p-8 lg:p-12 rounded-[2.5rem] flex flex-col items-center justify-center min-h-[350px] lg:min-h-[500px] relative overflow-hidden"
         >
           {/* Background decoration */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background to-background z-0" />
@@ -326,12 +326,12 @@ export default function Home() {
                   {winStatus === "WIN" ? (
                     <Sparkles className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
                   ) : (
-                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                    <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-red-500 mx-auto mb-4" />
                   )}
-                  <h2 className={`text-6xl font-black mb-4 uppercase ${winStatus === "WIN" ? "text-emerald-400 text-shadow-[0_0_20px_#10b981]" : "text-red-500"}`}>
+                  <h2 className={`text-4xl lg:text-6xl font-black mb-2 lg:mb-4 uppercase ${winStatus === "WIN" ? "text-emerald-400 text-shadow-[0_0_20px_#10b981]" : "text-red-500"}`}>
                     {winStatus === "WIN" ? "VICTORY!" : "DEFEAT"}
                   </h2>
-                  <p className="text-2xl font-mono text-white mb-8">
+                  <p className="text-xl lg:text-2xl font-mono text-white mb-6 lg:mb-8">
                     {winStatus === "WIN" ? `+${(betAmount * 2 * 0.99).toFixed(0)}` : `-${betAmount}`} HUN
                   </p>
                   <button 
@@ -350,10 +350,10 @@ export default function Home() {
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="lg:col-span-2 glass-panel p-8 rounded-[2.5rem] flex flex-col justify-between"
+          className="lg:col-span-2 glass-panel p-6 sm:p-8 rounded-[2.5rem] flex flex-col justify-between"
         >
           <div>
-            <div className="flex items-center gap-3 mb-8 pb-6 border-b border-white/10">
+            <div className="flex items-center gap-3 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-white/10">
               <div className="p-3 bg-primary/20 rounded-xl">
                 <TrendingUp className="text-primary w-6 h-6" />
               </div>
@@ -378,7 +378,7 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[10, 100, 500, "MAX"].map(amt => (
                   <button 
                     key={amt} 
