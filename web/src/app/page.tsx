@@ -88,6 +88,7 @@ export default function Home() {
     setWinStatus(null);
 
     try {
+      const startTime = Date.now();
       const betRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/game/coinflip/bet`, {
         method: "POST",
         headers: { 
@@ -105,31 +106,37 @@ export default function Home() {
 
       setUser({ ...user, balance: betData.updatedBalance });
 
-      // Coin Flip visual delay
-      setTimeout(async () => {
-        const resolveRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/game/coinflip/resolve`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ sessionId: betData.session.id }),
-        });
-        const resolveData = await resolveRes.json();
-        
-        if (resolveRes.ok) {
-          setResult(resolveData.result);
-          const isWin = resolveData.result === selectedChoice;
-          setWinStatus(isWin ? "WIN" : "LOSS");
+      // Gọi API kết quả ngay lập tức
+      const resolveRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/game/coinflip/resolve`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ sessionId: betData.session.id }),
+      });
+      const resolveData = await resolveRes.json();
+      
+      if (resolveRes.ok) {
+        setResult(resolveData.result);
+        const isWin = resolveData.result === selectedChoice;
 
+        // Tính toán thời gian còn lại của hiệu ứng xoay (1 giây)
+        const elapsed = Date.now() - startTime;
+        const remainingTime = Math.max(0, 1000 - elapsed);
+
+        setTimeout(() => {
+          setWinStatus(isWin ? "WIN" : "LOSS");
           if (isWin) {
             const tax = (betAmount * 2 - betAmount) * 0.01;
             const payout = (betAmount * 2) - tax;
             setUser(prev => prev ? { ...prev, balance: prev.balance + payout } : null);
           }
-        }
+          setFlipping(false);
+        }, remainingTime);
+      } else {
         setFlipping(false);
-      }, 1000); 
+      }
 
     } catch (err) {
       setFlipping(false);
@@ -262,7 +269,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background to-background z-0" />
           
           <div className="coin-container relative z-10">
-            <div className={`coin ${flipping ? (choice === "HEADS" ? "flip-heads" : "flip-tails") : ""}`}>
+            <div className={`coin ${flipping ? (result ? (result === "HEADS" ? "flip-heads" : "flip-tails") : (choice === "HEADS" ? "flip-heads" : "flip-tails")) : ""}`}>
               {/* Front (Heads) */}
               <div className={`coin-face coin-front ${!flipping && result === "TAILS" ? "hidden" : ""}`}>
                 <div className="w-[120px] h-[120px] rounded-full border-[6px] border-yellow-300/60 flex items-center justify-center">
