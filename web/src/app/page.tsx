@@ -129,7 +129,7 @@ export default function Home() {
           }
         }
         setFlipping(false);
-      }, 3000); 
+      }, 1000); 
 
     } catch (err) {
       setFlipping(false);
