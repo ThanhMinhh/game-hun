@@ -60,6 +60,22 @@ app.post('/api/game/coinflip/resolve', requireAuth, async (req: any, res: any) =
   }
 });
 
+// Gộp 2 thao tác thành 1 API duy nhất để giảm một nửa thời gian Ping qua mạng
+app.post('/api/game/coinflip/play', requireAuth, async (req: any, res: any) => {
+  try {
+    const { amount, choice } = req.body;
+    const betResult = await processBet(req.user.userId, 'COINFLIP', amount, choice);
+    const resolveResult = await resolveCoinflip(betResult.session.id);
+    
+    res.json({
+      bet: betResult,
+      resolve: resolveResult
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Hun Entertainment Backend is running' });
 });

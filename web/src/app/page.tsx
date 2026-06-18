@@ -89,7 +89,7 @@ export default function Home() {
 
     try {
       const startTime = Date.now();
-      const betRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/game/coinflip/bet`, {
+      const playRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/game/coinflip/play`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -97,46 +97,31 @@ export default function Home() {
         },
         body: JSON.stringify({ amount: betAmount, choice: selectedChoice }),
       });
-      const betData = await betRes.json();
+      const playData = await playRes.json();
       
-      if (!betRes.ok) {
+      if (!playRes.ok) {
         setFlipping(false);
-        return alert(betData.error);
+        return alert(playData.error);
       }
 
-      setUser({ ...user, balance: betData.updatedBalance });
+      setResult(playData.resolve.result);
+      const isWin = playData.resolve.result === selectedChoice;
 
-      // Gọi API kết quả ngay lập tức
-      const resolveRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/game/coinflip/resolve`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ sessionId: betData.session.id }),
-      });
-      const resolveData = await resolveRes.json();
-      
-      if (resolveRes.ok) {
-        setResult(resolveData.result);
-        const isWin = resolveData.result === selectedChoice;
+      // Tính toán thời gian còn lại của hiệu ứng xoay (1 giây)
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, 1000 - elapsed);
 
-        // Tính toán thời gian còn lại của hiệu ứng xoay (1 giây)
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, 1000 - elapsed);
-
-        setTimeout(() => {
-          setWinStatus(isWin ? "WIN" : "LOSS");
-          if (isWin) {
-            const tax = (betAmount * 2 - betAmount) * 0.01;
-            const payout = (betAmount * 2) - tax;
-            setUser(prev => prev ? { ...prev, balance: prev.balance + payout } : null);
-          }
-          setFlipping(false);
-        }, remainingTime);
-      } else {
+      setTimeout(() => {
+        setWinStatus(isWin ? "WIN" : "LOSS");
+        if (isWin) {
+          const tax = (betAmount * 2 - betAmount) * 0.01;
+          const payout = (betAmount * 2) - tax;
+          setUser(prev => prev ? { ...prev, balance: prev.balance - betAmount + payout } : null);
+        } else {
+          setUser(prev => prev ? { ...prev, balance: prev.balance - betAmount } : null);
+        }
         setFlipping(false);
-      }
+      }, remainingTime);
 
     } catch (err) {
       setFlipping(false);
