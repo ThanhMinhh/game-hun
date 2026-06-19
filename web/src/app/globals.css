@@ -156,3 +156,24 @@ body {
 .cyber-button:hover {
   box-shadow: 0 0 20px rgba(192, 38, 211, 0.6);
 }
+
+/* Slot Machine Animations */
+@keyframes slot-shake {
+  0% { transform: translateY(-15px); opacity: 0.4; filter: blur(3px); }
+  50% { transform: translateY(15px); opacity: 0.8; filter: blur(3px); }
+  100% { transform: translateY(-15px); opacity: 0.4; filter: blur(3px); }
+}
+
+.slot-spinning {
+  animation: slot-shake 0.1s linear infinite;
+}
+
+.slot-land {
+  animation: slot-bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slot-bounce {
+  0% { transform: translateY(-30px); opacity: 0; }
+  50% { transform: translateY(10px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; filter: blur(0); }
+}

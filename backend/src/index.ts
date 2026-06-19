@@ -21,6 +21,7 @@ app.use(express.json());
 import { syncUser, updateProfile } from './auth';
 import { processBet } from './wallet';
 import { resolveCoinflip } from './game';
+import { resolveSlots } from './slots';
 import { auth } from './db';
 
 app.post('/api/auth/sync', syncUser);
@@ -68,6 +69,22 @@ app.post('/api/game/coinflip/play', requireAuth, async (req: any, res: any) => {
     const { amount, choice } = req.body;
     const betResult = await processBet(req.user.userId, 'COINFLIP', amount, choice);
     const resolveResult = await resolveCoinflip(betResult.session.id);
+    
+    res.json({
+      bet: betResult,
+      resolve: resolveResult
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/game/slots/play', requireAuth, async (req: any, res: any) => {
+  try {
+    const { amount } = req.body;
+    // Đối với Slots, không cần `choice` như Coinflip, ta có thể truyền chuỗi rỗng hoặc 'SPIN'
+    const betResult = await processBet(req.user.userId, 'SLOTS', amount, 'SPIN');
+    const resolveResult = await resolveSlots(betResult.session.id);
     
     res.json({
       bet: betResult,

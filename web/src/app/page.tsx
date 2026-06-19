@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Coins, LogIn, UserPlus, LogOut, ArrowRight, TrendingUp, Sparkles, AlertCircle } from "lucide-react";
+import { Coins, LogIn, UserPlus, LogOut, ArrowRight, TrendingUp, Sparkles, AlertCircle, ArrowLeft, Gamepad2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
@@ -21,6 +21,15 @@ export default function Home() {
   const [flipping, setFlipping] = useState(false);
   const [result, setResult] = useState<"HEADS" | "TAILS" | null>(null);
   const [winStatus, setWinStatus] = useState<"WIN" | "LOSS" | null>(null);
+
+  // Screen Navigation
+  const [currentScreen, setCurrentScreen] = useState<"MENU" | "COINFLIP" | "SLOTS">("MENU");
+
+  // Slots States
+  const [slotsFlipping, setSlotsFlipping] = useState(false);
+  const [slotsResult, setSlotsResult] = useState<string[] | null>(null);
+  const [slotsWinStatus, setSlotsWinStatus] = useState<"WIN" | "LOSS" | null>(null);
+  const [slotsMultiplier, setSlotsMultiplier] = useState(0);
 
   // Profile Edit States
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -166,6 +175,59 @@ export default function Home() {
     }
   };
 
+  const playSlots = async () => {
+    if (!token || !user) return;
+    if (betAmount <= 0) return alert("Bet must be positive");
+    if (betAmount > user.balance) return alert("Insufficient HUN!");
+    
+    setSlotsFlipping(true);
+    setSlotsResult(null);
+    setSlotsWinStatus(null);
+
+    try {
+      const startTime = Date.now();
+      const playRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/game/slots/play`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ amount: betAmount }),
+      });
+      const playData = await playRes.json();
+      
+      if (!playRes.ok) {
+        setSlotsFlipping(false);
+        return alert(playData.error);
+      }
+
+      setSlotsResult(playData.resolve.result);
+      setSlotsMultiplier(playData.resolve.multiplier);
+      const isWin = playData.resolve.multiplier > 0;
+
+      // Giả lập quay hũ trong 2 giây (2000ms)
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, 2000 - elapsed);
+
+      setTimeout(() => {
+        setSlotsWinStatus(isWin ? "WIN" : "LOSS");
+        if (isWin) {
+          const rawWinnings = betAmount * playData.resolve.multiplier;
+          const tax = (rawWinnings - betAmount) * 0.01;
+          const payout = rawWinnings - tax;
+          setUser(prev => prev ? { ...prev, balance: prev.balance - betAmount + payout } : null);
+        } else {
+          setUser(prev => prev ? { ...prev, balance: prev.balance - betAmount } : null);
+        }
+        setSlotsFlipping(false);
+      }, remainingTime);
+
+    } catch (err) {
+      setSlotsFlipping(false);
+      alert("Network Error");
+    }
+  };
+
   if (!token || !user) {
     return (
       <div className="relative w-full max-w-md mx-auto mt-12 px-4">
@@ -284,8 +346,61 @@ export default function Home() {
         </div>
       </motion.div>
 
-      {/* Main Game Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      {/* Main Game Area Navigation */}
+      {currentScreen !== "MENU" && (
+        <button 
+          onClick={() => setCurrentScreen("MENU")}
+          className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span className="font-semibold uppercase tracking-wider">Back to Sảnh Chờ</span>
+        </button>
+      )}
+
+      {/* ===================== MENU SCREEN ===================== */}
+      {currentScreen === "MENU" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+          {/* Lật Xu Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setCurrentScreen("COINFLIP")}
+            className="glass-panel p-10 rounded-[2.5rem] cursor-pointer group relative overflow-hidden flex flex-col items-center justify-center min-h-[400px] border border-white/5 hover:border-primary/50 transition-colors"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="w-32 h-32 mb-8 bg-gradient-to-tr from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(234,179,8,0.3)] group-hover:shadow-[0_0_80px_rgba(234,179,8,0.6)] transition-shadow">
+              <span className="text-6xl font-black text-yellow-950">H</span>
+            </div>
+            <h2 className="text-4xl font-black text-white uppercase tracking-widest mb-2">Coinflip</h2>
+            <p className="text-gray-400 text-center font-medium">Thử thách nhân phẩm với Tỷ lệ thắng 50/50.</p>
+            <div className="mt-8 flex items-center gap-2 text-primary font-bold uppercase tracking-wider group-hover:gap-4 transition-all">
+              Chơi ngay <ArrowRight size={20} />
+            </div>
+          </motion.div>
+
+          {/* Nổ Hũ Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setCurrentScreen("SLOTS")}
+            className="glass-panel p-10 rounded-[2.5rem] cursor-pointer group relative overflow-hidden flex flex-col items-center justify-center min-h-[400px] border border-white/5 hover:border-secondary/50 transition-colors"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="w-32 h-32 mb-8 bg-gradient-to-tr from-blue-400 to-emerald-400 rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(59,130,246,0.3)] group-hover:shadow-[0_0_80px_rgba(59,130,246,0.6)] transition-shadow rotate-12 group-hover:rotate-0">
+              <span className="text-6xl">🎰</span>
+            </div>
+            <h2 className="text-4xl font-black text-white uppercase tracking-widest mb-2">777 Slots</h2>
+            <p className="text-gray-400 text-center font-medium">Săn Jackpot x10 tiền cược vô cùng hấp dẫn.</p>
+            <div className="mt-8 flex items-center gap-2 text-secondary font-bold uppercase tracking-wider group-hover:gap-4 transition-all">
+              Chơi ngay <ArrowRight size={20} />
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* ===================== COINFLIP SCREEN ===================== */}
+      {currentScreen === "COINFLIP" && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         
         {/* Game Visuals (3 columns) */}
         <motion.div 
@@ -423,6 +538,136 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
+      )}
+
+      {/* ===================== SLOTS SCREEN ===================== */}
+      {currentScreen === "SLOTS" && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          
+          {/* Slots Visuals (3 columns) */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-3 glass-panel p-8 lg:p-12 rounded-[2.5rem] flex flex-col items-center justify-center min-h-[350px] lg:min-h-[500px] relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-secondary/10 via-background to-background z-0" />
+            
+            <div className="relative z-10 flex gap-4 p-8 bg-black/60 rounded-3xl border-4 border-gray-800 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="w-24 h-32 md:w-32 md:h-40 bg-white/10 rounded-xl border-2 border-white/20 flex items-center justify-center overflow-hidden relative shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+                  {slotsFlipping ? (
+                    <div className="text-6xl md:text-8xl slot-spinning">🎰</div>
+                  ) : (
+                    <div className="text-6xl md:text-8xl slot-land">{slotsResult ? slotsResult[i] : "❓"}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <AnimatePresence>
+              {slotsWinStatus && !slotsFlipping && (
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  className={`absolute inset-0 flex flex-col items-center justify-center backdrop-blur-md z-20 ${slotsWinStatus === "WIN" ? "bg-emerald-900/40" : "bg-red-950/40"}`}
+                >
+                  <div className="text-center p-10 bg-black/60 rounded-3xl border border-white/10 shadow-2xl">
+                    {slotsWinStatus === "WIN" ? (
+                      <Sparkles className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+                    ) : (
+                      <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-red-500 mx-auto mb-4" />
+                    )}
+                    <h2 className={`text-4xl lg:text-6xl font-black mb-2 lg:mb-4 uppercase ${slotsWinStatus === "WIN" ? "text-emerald-400 text-shadow-[0_0_20px_#10b981]" : "text-red-500"}`}>
+                      {slotsWinStatus === "WIN" ? (slotsMultiplier === 10 ? "JACKPOT!" : "BIG WIN!") : "DEFEAT"}
+                    </h2>
+                    <p className="text-xl lg:text-2xl font-mono text-white mb-6 lg:mb-8">
+                      {slotsWinStatus === "WIN" ? `+${(betAmount * slotsMultiplier * 0.99).toFixed(0)}` : `-${betAmount}`} HUN
+                    </p>
+                    <button 
+                      onClick={() => setSlotsWinStatus(null)}
+                      className="px-10 py-4 bg-white text-black font-black uppercase tracking-wider rounded-xl hover:bg-gray-200 transition transform hover:scale-105 active:scale-95"
+                    >
+                      Spin Again
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Betting Controls (2 columns) */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-2 glass-panel p-6 sm:p-8 rounded-[2.5rem] flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center gap-3 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-white/10">
+                <div className="p-3 bg-secondary/20 rounded-xl">
+                  <Gamepad2 className="text-secondary w-6 h-6" />
+                </div>
+                <h2 className="text-3xl font-black uppercase tracking-wider">Slot Machine</h2>
+              </div>
+              
+              <div className="space-y-6 mb-10">
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+                    <span>Wager Amount</span>
+                    <span>Max: {user?.balance}</span>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-gray-500">HUN</span>
+                    <input 
+                      type="number" 
+                      value={betAmount}
+                      onChange={(e) => setBetAmount(Number(e.target.value))}
+                      className="w-full cyber-input text-white rounded-2xl pl-16 pr-6 py-5 text-3xl font-mono font-black focus:outline-none"
+                      min="10"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[10, 100, 500, "MAX"].map(amt => (
+                    <button 
+                      key={amt} 
+                      onClick={() => setBetAmount(amt === "MAX" ? (user?.balance || 0) : Number(amt))}
+                      className="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-mono font-bold text-sm transition-all hover:-translate-y-1"
+                    >
+                      {amt === "MAX" ? "MAX" : `+${amt}`}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Payout Table */}
+                <div className="mt-8 bg-black/40 p-4 rounded-2xl border border-white/10 text-sm">
+                  <h3 className="text-gray-400 font-bold uppercase tracking-wider mb-3 text-center">Payouts</h3>
+                  <div className="space-y-2 font-mono">
+                    <div className="flex justify-between"><span className="tracking-widest">H H H</span><span className="text-yellow-400 font-bold">x10</span></div>
+                    <div className="flex justify-between"><span className="tracking-widest">💎 💎 💎</span><span className="text-emerald-400 font-bold">x5</span></div>
+                    <div className="flex justify-between"><span className="tracking-widest">🔔 🔔 🔔</span><span className="text-blue-400 font-bold">x3</span></div>
+                    <div className="flex justify-between text-gray-500"><span className="tracking-widest">ANY 3</span><span className="font-bold">x2</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <button 
+                disabled={slotsFlipping}
+                onClick={playSlots}
+                className="w-full relative group overflow-hidden rounded-2xl bg-gradient-to-r from-secondary to-blue-600 hover:from-blue-500 hover:to-secondary transition-all p-6 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_10px_20px_rgba(59,130,246,0.2)]"
+              >
+                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
+                <div className="relative flex items-center justify-center gap-4">
+                  <span className="font-black text-3xl text-white uppercase tracking-widest">{slotsFlipping ? "Spinning..." : "SPIN!"}</span>
+                </div>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Profile Edit Modal */}
       <AnimatePresence>
