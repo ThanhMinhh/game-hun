@@ -158,14 +158,13 @@ body {
 }
 
 /* Slot Machine Animations */
-@keyframes slot-shake {
-  0% { transform: translateY(-15px); opacity: 0.4; filter: blur(3px); }
-  50% { transform: translateY(15px); opacity: 0.8; filter: blur(3px); }
-  100% { transform: translateY(-15px); opacity: 0.4; filter: blur(3px); }
+@keyframes slot-spin-vertical {
+  0% { transform: translateY(0%); filter: blur(2px); }
+  100% { transform: translateY(-50%); filter: blur(2px); }
 }
 
-.slot-spinning {
-  animation: slot-shake 0.1s linear infinite;
+.slot-spinning-vertical {
+  animation: slot-spin-vertical 0.15s linear infinite;
 }
 
 .slot-land {

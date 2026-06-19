@@ -556,7 +556,15 @@ export default function Home() {
               {[0, 1, 2].map((i) => (
                 <div key={i} className="w-24 h-32 md:w-32 md:h-40 bg-white/10 rounded-xl border-2 border-white/20 flex items-center justify-center overflow-hidden relative shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
                   {slotsFlipping ? (
-                    <div className="text-6xl md:text-8xl slot-spinning">🎰</div>
+                    <div 
+                      className="absolute top-0 flex flex-col items-center gap-4 slot-spinning-vertical pt-4"
+                      style={{ animationDuration: `${0.15 + i * 0.05}s` }}
+                    >
+                      {/* Duplicate array for seamless infinite scrolling */}
+                      {["H", "💎", "🔔", "🍒", "🍋", "🍉", "H", "💎", "🔔", "🍒", "🍋", "🍉"].map((sym, idx) => (
+                        <div key={idx} className="text-6xl md:text-8xl w-full text-center leading-none flex items-center justify-center h-[100px]">{sym}</div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="text-6xl md:text-8xl slot-land">{slotsResult ? slotsResult[i] : "❓"}</div>
                   )}
@@ -567,30 +575,17 @@ export default function Home() {
             <AnimatePresence>
               {slotsWinStatus && !slotsFlipping && (
                 <motion.div 
-                  initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                  initial={{ scale: 0.8, opacity: 0, y: -20 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   exit={{ scale: 0.8, opacity: 0 }}
-                  className={`absolute inset-0 flex flex-col items-center justify-center backdrop-blur-md z-20 ${slotsWinStatus === "WIN" ? "bg-emerald-900/40" : "bg-red-950/40"}`}
+                  className="mt-8 text-center bg-black/40 px-10 py-6 rounded-3xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] backdrop-blur-sm z-20"
                 >
-                  <div className="text-center p-10 bg-black/60 rounded-3xl border border-white/10 shadow-2xl">
-                    {slotsWinStatus === "WIN" ? (
-                      <Sparkles className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-                    ) : (
-                      <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-red-500 mx-auto mb-4" />
-                    )}
-                    <h2 className={`text-4xl lg:text-6xl font-black mb-2 lg:mb-4 uppercase ${slotsWinStatus === "WIN" ? "text-emerald-400 text-shadow-[0_0_20px_#10b981]" : "text-red-500"}`}>
-                      {slotsWinStatus === "WIN" ? (slotsMultiplier === 10 ? "JACKPOT!" : "BIG WIN!") : "DEFEAT"}
-                    </h2>
-                    <p className="text-xl lg:text-2xl font-mono text-white mb-6 lg:mb-8">
-                      {slotsWinStatus === "WIN" ? `+${(betAmount * slotsMultiplier * 0.99).toFixed(0)}` : `-${betAmount}`} HUN
-                    </p>
-                    <button 
-                      onClick={() => setSlotsWinStatus(null)}
-                      className="px-10 py-4 bg-white text-black font-black uppercase tracking-wider rounded-xl hover:bg-gray-200 transition transform hover:scale-105 active:scale-95"
-                    >
-                      Spin Again
-                    </button>
-                  </div>
+                  <h2 className={`text-4xl lg:text-5xl font-black mb-2 uppercase ${slotsWinStatus === "WIN" ? "text-emerald-400 text-shadow-[0_0_20px_#10b981]" : "text-red-500"}`}>
+                    {slotsWinStatus === "WIN" ? (slotsMultiplier === 10 ? "JACKPOT!" : "BIG WIN!") : "DEFEAT"}
+                  </h2>
+                  <p className="text-2xl font-mono text-white">
+                    {slotsWinStatus === "WIN" ? `+${(betAmount * slotsMultiplier * 0.99).toFixed(0)}` : `-${betAmount}`} <span className="text-sm text-primary">HUN</span>
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
